@@ -26,9 +26,12 @@ while True:
    lines = cv.HoughLinesP(edgesFrame, rho, theta, threshold, np.array([]), minLineLength, maxLineGap)
 
    # draw lines
+   frameCopy = np.copy(frame) * 0
    for line in lines:
       for x1,y1,x2,y2 in line:
-         cv.line(frame, (x1,y1),(x2,y2),(255,0,0),5)
+         cv.line(frameCopy, (x1,y1),(x2,y2),(255,0,0),5)
+         frameWithEdges = cv.addWeighted(frame, 0.8, frameCopy, 1, 0)
+         cv.imshow('lines',frameWithEdges)
 
    if cv.waitKey(1) == ord('q'):
       break
