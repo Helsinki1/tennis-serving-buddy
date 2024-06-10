@@ -21,7 +21,9 @@ while True:
    rho = 1 # distance resolution
    theta = np.pi/180 # angular resolution
    threshold = 15 # min number of votes
-   lines = cv.HoughLines(edgesFrame, rho, theta, threshold)
+   minLineLength = 50 # min pixels to be a line
+   maxLineGap = 30 # max pixels between parts of a line
+   lines = cv.HoughLinesP(edgesFrame, rho, theta, threshold, np.array([]), minLineLength, maxLineGap)
 
    # draw lines
    for line in lines:
