@@ -9,12 +9,18 @@ if not camera.isOpened():
 
 objectDetector = cv.createBackgroundSubtractorMOG2(history=100, varThreshold=30)
 
+tracker = cv.legacy.TrackerMOSSE()
+success, img = camera.read()
+tracker.init(img)
+
 while True:
 
    captured, frame = camera.read()
    if not captured:
       print("ERROR: frame captured incorrectly, exiting...")
       break
+   success, bbox = tracker.update(frame)
+   x,y,w,h=int(bbox[0]),int(bbox[1]),int(bbox[2]),int(bbox[3])
 
    # detect objects & draw objects
    mask = objectDetector.apply(frame)
