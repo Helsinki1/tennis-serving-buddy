@@ -9,6 +9,8 @@ if not camera.isOpened():
 
 objectDetector = cv.createBackgroundSubtractorMOG2(history=100, varThreshold=30)
 
+# SHIFT TO A PIXEL COLOR DETECTOR METHOD
+
 while True:
 
    captured, frame = camera.read()
@@ -24,9 +26,11 @@ while True:
    blankFrame = np.copy(frame) * 0
    for cnt in contours:
       # remove static & small elements
+      # draw boxes around all the detected objects
       area = cv.contourArea(cnt)
-      if area > 20:
-         cv.drawContours(blankFrame, [cnt], -1, (0,255,0), 2)
+      if area > 35:
+         x, y, w, h = cv.boundingRect(cnt)
+         cv.rectangle(blankFrame, (x, y), (x+w, y+h), (0, 0, 200), 3)
 
 
    # detect lines
