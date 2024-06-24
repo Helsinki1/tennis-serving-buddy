@@ -9,6 +9,12 @@ if not camera.isOpened():
 
 objectDetector = cv.createBackgroundSubtractorMOG2(history=100, varThreshold=30)
 
+#for matplotlib
+ballx = []
+bally = []
+success, frame = camera.read()
+Fheight, Fwidth = frame.shape[0:2]
+
 while True:
 
    captured, frame = camera.read()
@@ -24,13 +30,13 @@ while True:
    blankFrame = np.copy(frame) * 0
    for cnt in contours:
       # remove static & small elements
-      # draw boxes around all the detected objects
+      # draw boxes around all the detected objects & record ball coords
       area = cv.contourArea(cnt)
       if area > 35:
          x, y, w, h = cv.boundingRect(cnt)
          cv.rectangle(blankFrame, (x, y), (x+w, y+h), (0, 0, 200), 3)
-         ballx = x + (w//2)
-         bally = y + h
+         ballx.append( Fwidth - (x + (w//2)) )
+         bally.append( Fheight - (y + h) )
 
 
    # detect lines
@@ -57,9 +63,14 @@ while True:
    cv.imshow('Lines & Objects',blankFrame)
 
 
-
    if cv.waitKey(1) == ord('q'):
       break
+
+
+#graph ball trajectory
+plt.plot(ballx, bally, 'ro')
+plt.axis((0,Fwidth,0,Fheight))
+plt.show()
 
 #conclude by exiting from everything
 camera.release
