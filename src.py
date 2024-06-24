@@ -9,8 +9,6 @@ if not camera.isOpened():
 
 objectDetector = cv.createBackgroundSubtractorMOG2(history=100, varThreshold=30)
 
-# SHIFT TO A PIXEL COLOR DETECTOR METHOD
-
 while True:
 
    captured, frame = camera.read()
@@ -31,6 +29,8 @@ while True:
       if area > 35:
          x, y, w, h = cv.boundingRect(cnt)
          cv.rectangle(blankFrame, (x, y), (x+w, y+h), (0, 0, 200), 3)
+         ballx = x + (w//2)
+         bally = y + h
 
 
    # detect lines
