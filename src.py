@@ -12,9 +12,10 @@ objectDetector = cv.createBackgroundSubtractorMOG2(history=100, varThreshold=30)
 #for pyplot
 ballx = []
 bally = []
-serveBoxEdge1 = [0,0,0,0] # far wide boundary x1x2y1y2
-serveBoxEdge2 = [0,0,0,0] # long boundary x1x2y1y2
-serveBoxEdge3 = [0,0,0,0] # near wide boundary x1x2y1y2
+farWideBoundxy1, farWideBoundxy2 = (0,0), (0,0) # far wide boundary xy1 xy2
+longBoundxy1, longBoundxy2 = (0,0), (0,0) # long boundary xy1 xy2
+nearWideBoundxy1, nearWideBoundxy2 = (0,0), (0,0) # near wide boundary xy1 xy2
+
 success, frame = camera.read()
 Fheight, Fwidth = frame.shape[0:2]
 
@@ -63,12 +64,12 @@ while True:
          cv.line(blankFrame, (x1,y1),(x2,y2),(255,0,0),5)
          slope = (y2 - y1) / (x2 - x1)
          if (slope > 3) or ((-1*slope) < -3):
-            serveBoxEdge2 = [Fwidth-x1,Fwidth-x2,Fheight-y1,Fheight-y2] # changing origin to bottom left corner
+            longBoundxy1, longBoundxy2 = (Fwidth-x1, Fheight-y1), (Fwidth-x2, Fheight-y2) # changing origin to bottom left corner
          else:
             if y1 < Fheight/2 and y2 < Fheight/2: # extremely rudimentary classification system
-               serveBoxEdge1 = [Fwidth-x1,Fwidth-x2,Fheight-y1,Fheight-y2]
+               farWideBoundxy1, farWideBoundxy2 = (Fwidth-x1, Fheight-y1), (Fwidth-x2, Fheight-y2)
             else:
-               serveBoxEdge2 = [Fwidth-x1,Fwidth-x2,Fheight-y1,Fheight-y2]
+               nearWideBoundxy1, nearWideBoundxy2 = (Fwidth-x1, Fheight-y1), (Fwidth-x2, Fheight-y2)
 
 
    cv.imshow('Lines & Objects',blankFrame)
@@ -81,7 +82,12 @@ while True:
 #graph ball trajectory
 plt.plot(ballx, bally, 'ro')
 plt.axis((0,Fwidth,0,Fheight))
-plt.show()
+
+#graph edges of serve box
+plt.axline(farWideBoundxy1, farWideBoundxy2, linewidth=4, color='b')
+plt.axline(longBoundxy1, longBoundxy2, linewidth=4, color='b')
+plt.axline(nearWideBoundxy1, nearWideBoundxy2, linewidth=4, color='b')
+plt.show
 
 #find lowest point of ball traj (the bounce)
 index = bally.index(min(bally))
