@@ -9,9 +9,12 @@ if not camera.isOpened():
 
 objectDetector = cv.createBackgroundSubtractorMOG2(history=100, varThreshold=30)
 
-#for matplotlib
+#for pyplot
 ballx = []
 bally = []
+serveBoxEdge1 = [0,0,0,0] # far wide boundary x1x2y1y2
+serveBoxEdge2 = [0,0,0,0] # long boundary x1x2y1y2
+serveBoxEdge3 = [0,0,0,0] # near wide boundary x1x2y1y2
 success, frame = camera.read()
 Fheight, Fwidth = frame.shape[0:2]
 
@@ -58,6 +61,14 @@ while True:
    for line in lines:
       for x1,y1,x2,y2 in line:
          cv.line(blankFrame, (x1,y1),(x2,y2),(255,0,0),5)
+         slope = (y2 - y1) / (x2 - x1)
+         if (slope > 3) or ((-1*slope) < -3):
+            serveBoxEdge2 = [Fwidth-x1,Fwidth-x2,Fheight-y1,Fheight-y2] # changing origin to bottom left corner
+         else:
+            if y1 < Fheight/2 and y2 < Fheight/2: # extremely rudimentary classification system
+               serveBoxEdge1 = [Fwidth-x1,Fwidth-x2,Fheight-y1,Fheight-y2]
+            else:
+               serveBoxEdge2 = [Fwidth-x1,Fwidth-x2,Fheight-y1,Fheight-y2]
 
 
    cv.imshow('Lines & Objects',blankFrame)
@@ -71,6 +82,10 @@ while True:
 plt.plot(ballx, bally, 'ro')
 plt.axis((0,Fwidth,0,Fheight))
 plt.show()
+
+#find lowest point of ball traj (the bounce)
+index = bally.index(min(bally))
+bounce = [ballx[index], bally[index]]
 
 #conclude by exiting from everything
 camera.release
