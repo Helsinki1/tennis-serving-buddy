@@ -12,7 +12,7 @@ objectDetector = cv.createBackgroundSubtractorMOG2(history=100, varThreshold=30)
 #for pyplot
 ballx = []
 bally = []
-coordPairs = [] # 2D array
+coordPairs = np.array([[0,0,0,0],[0,0,0,0],[0,0,0,0]])
 boxCaptured = False
 
 success, frame = camera.read()
@@ -58,13 +58,13 @@ while True:
    lines = cv.HoughLinesP(edgesFrame, rho, theta, threshold, np.array([]), minLineLength, maxLineGap)
 
    numLines = len(lines)
-   coordPairs = [[0,0,0,0] for i in range(numLines)]
+   #coordPairs = [[0,0,0,0] for i in range(numLines)]
    ind = 0
    # draw lines
    for line in lines:
       for x1,y1,x2,y2 in line:
          cv.line(blankFrame, (x1,y1),(x2,y2),(255,0,0),5) # SUPPRESS IN FINAL PRODUCT
-         coordPairs[ind] = [x1,y1,x2,y2]
+         coordPairs[ind%3] = [x1,y1,x2,y2]
          ind += 1
 
    cv.imshow('Lines & Objects', blankFrame) # SUPPRESS IN FINAL PRODUCT
