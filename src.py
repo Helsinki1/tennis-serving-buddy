@@ -12,10 +12,16 @@ objectDetector = cv.createBackgroundSubtractorMOG2(history=100, varThreshold=30)
 #for pyplot
 ballx = []
 bally = []
-coordPairs = np.array([[]],ndmin=2)
+coordPairs = np.array([[]], ndmin=2)
 
 success, frame = camera.read()
 Fheight, Fwidth = frame.shape[0:2]
+
+ans = input("Do you want to select ROI? (y/n) ")
+if ans == "y":
+   croppedx, croppedy, croppedw, croppedh = cv.selectROI("select ROI", frame) # allow user to manually exclude background
+   Fheight = croppedh
+   Fwidth = croppedw
 
 while True:
 
@@ -23,6 +29,8 @@ while True:
    if not captured:
       print("ERROR: frame captured incorrectly, exiting...")
       break
+   if ans == "y":
+      frame = frame[croppedx:(croppedx+croppedw+1), croppedy:(croppedy+croppedh+1)]
 
    # detect objects & draw objects
    mask = objectDetector.apply(frame)
@@ -39,7 +47,6 @@ while True:
          cv.rectangle(blankFrame, (x, y), (x+w, y+h), (0, 0, 200), 3) # SUPPRESS IN FINAL PRODUCT
          ballx.append( Fwidth - (x + (w//2)) )
          bally.append( Fheight - (y + h) )
-
 
    # detect lines
    grayFrame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
@@ -75,6 +82,8 @@ while True:
             ind += 1
       break
 
+
+
 #graph edges of serve box
 for [x1,y1,x2,y2] in coordPairs:
    plt.axline((x1,y1),(x2,y2), linewidth=2, color='b')
@@ -82,11 +91,12 @@ for [x1,y1,x2,y2] in coordPairs:
 #graph ball trajectory
 plt.plot(ballx, bally, 'ro')
 plt.axis((0,Fwidth,0,Fheight))
-plt.show()
 
-#find lowest point of ball traj (the bounce)
+#plot lowest point of ball traj (the bounce)
 index = bally.index(min(bally))
 bounce = [ballx[index], bally[index]]
+plt.plot(bounce[0], bounce[1], 'go')
+plt.show()
 
 #conclude by exiting from everything
 camera.release
