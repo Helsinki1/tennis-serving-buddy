@@ -36,7 +36,7 @@ while True:
       area = cv.contourArea(cnt)
       if area > 35:
          x, y, w, h = cv.boundingRect(cnt)
-         #cv.rectangle(blankFrame, (x, y), (x+w, y+h), (0, 0, 200), 3) # SUPPRESS IN FINAL PRODUCT
+         cv.rectangle(blankFrame, (x, y), (x+w, y+h), (0, 0, 200), 3) # SUPPRESS IN FINAL PRODUCT
          ballx.append( Fwidth - (x + (w//2)) )
          bally.append( Fheight - (y + h) )
 
@@ -56,31 +56,32 @@ while True:
    maxLineGap = 30 # max pixels between parts of a line
    lines = cv.HoughLinesP(edgesFrame, rho, theta, threshold, np.array([]), minLineLength, maxLineGap)
 
-   numLines = len(lines)
-   coordPairs = [[0,0,0,0] for i in range(numLines)]
-   ind = 0
    # draw lines
    for line in lines:
       for x1,y1,x2,y2 in line:
          cv.line(blankFrame, (x1,y1),(x2,y2),(255,0,0),5) # SUPPRESS IN FINAL PRODUCT
-         coordPairs[ind] = [x1,y1,x2,y2]
-         ind += 1
 
    cv.imshow('Lines & Objects', blankFrame) # SUPPRESS IN FINAL PRODUCT
 
 
+   # take a snapshot of the court lines on the last captured frame
    if cv.waitKey(1) == ord('q'):
-      
+      numLines = len(lines)
+      coordPairs = [[0,0,0,0] for i in range(numLines)]
+      ind = 0
+      for line in lines:
+         for x1,y1,x2,y2 in line:
+            coordPairs[ind] = [x1,y1,x2,y2]
+            ind += 1
       break
-
-
-#graph ball trajectory
-plt.plot(ballx, bally, 'ro')
-plt.axis((0,Fwidth,0,Fheight))
 
 #graph edges of serve box
 for [x1,y1,x2,y2] in coordPairs:
    plt.axline((x1,y1),(x2,y2), linewidth=2, color='b')
+
+#graph ball trajectory
+plt.plot(ballx, bally, 'ro')
+plt.axis((0,Fwidth,0,Fheight))
 plt.show()
 
 #find lowest point of ball traj (the bounce)
