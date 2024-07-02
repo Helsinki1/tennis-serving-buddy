@@ -12,8 +12,7 @@ objectDetector = cv.createBackgroundSubtractorMOG2(history=100, varThreshold=30)
 #for pyplot
 ballx = []
 bally = []
-coordPairs = np.array([[0,0,0,0],[0,0,0,0],[0,0,0,0]])
-boxCaptured = False
+coordPairs = np.array([[]],ndmin=2)
 
 success, frame = camera.read()
 Fheight, Fwidth = frame.shape[0:2]
@@ -37,7 +36,7 @@ while True:
       area = cv.contourArea(cnt)
       if area > 35:
          x, y, w, h = cv.boundingRect(cnt)
-         cv.rectangle(blankFrame, (x, y), (x+w, y+h), (0, 0, 200), 3) # SUPPRESS IN FINAL PRODUCT
+         #cv.rectangle(blankFrame, (x, y), (x+w, y+h), (0, 0, 200), 3) # SUPPRESS IN FINAL PRODUCT
          ballx.append( Fwidth - (x + (w//2)) )
          bally.append( Fheight - (y + h) )
 
@@ -58,19 +57,20 @@ while True:
    lines = cv.HoughLinesP(edgesFrame, rho, theta, threshold, np.array([]), minLineLength, maxLineGap)
 
    numLines = len(lines)
-   #coordPairs = [[0,0,0,0] for i in range(numLines)]
+   coordPairs = [[0,0,0,0] for i in range(numLines)]
    ind = 0
    # draw lines
    for line in lines:
       for x1,y1,x2,y2 in line:
          cv.line(blankFrame, (x1,y1),(x2,y2),(255,0,0),5) # SUPPRESS IN FINAL PRODUCT
-         coordPairs[ind%3] = [x1,y1,x2,y2]
+         coordPairs[ind] = [x1,y1,x2,y2]
          ind += 1
 
    cv.imshow('Lines & Objects', blankFrame) # SUPPRESS IN FINAL PRODUCT
 
 
    if cv.waitKey(1) == ord('q'):
+      
       break
 
 
@@ -80,9 +80,8 @@ plt.axis((0,Fwidth,0,Fheight))
 
 #graph edges of serve box
 for [x1,y1,x2,y2] in coordPairs:
-   print(x1, y1, x2, y2) # PRINT OUTPUT FOR DEBUGGING
    plt.axline((x1,y1),(x2,y2), linewidth=2, color='b')
-plt.show
+plt.show()
 
 #find lowest point of ball traj (the bounce)
 index = bally.index(min(bally))
