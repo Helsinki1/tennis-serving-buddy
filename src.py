@@ -2,6 +2,7 @@ import threading
 import cv2 as cv
 import numpy as np
 from matplotlib import pyplot as plt
+import time
 
 camera = cv.VideoCapture(0)
 if not camera.isOpened():
@@ -20,21 +21,22 @@ Fheight, Fwidth = frame.shape[0:2]
 
 ans = input("Do you want to select ROI? (y/n) ")
 if ans == "y":
-   croppedx, croppedy, croppedw, croppedh = cv.selectROI("select ROI", frame) # allow user to manually exclude background
+   croppedx, croppedy, croppedw, croppedh = cv.selectROI("select ROI", frame, showCrosshair=False) # allow user to manually exclude background
    Fheight = croppedh
    Fwidth = croppedw
 
 
 def updateCamera():
+   global frame
    while True:
+      time.sleep(2)
       captured, img = camera.read()
       if not captured:
          print("ERROR: frame captured incorrectly, exiting...")
          break
 
-      global frame
       if ans == "y":
-         frame = img[croppedx:(croppedx+croppedw+1), croppedy:(croppedy+croppedh+1)]
+         frame = img[croppedy:(croppedy+croppedh+1), croppedx:(croppedx+croppedw+1)]
       else:
          frame = img
 
@@ -43,9 +45,10 @@ def updateCamera():
 
 
 def processFrame():
+   global frame
    while True:
+      time.sleep(2)
       # detect objects & draw objects
-      global frame
       mask = objectDetector.apply(frame)
       _, mask = cv.threshold(mask,254,255,cv.THRESH_BINARY)
       contours, _ = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)

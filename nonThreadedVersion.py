@@ -19,7 +19,7 @@ Fheight, Fwidth = frame.shape[0:2]
 
 ans = input("Do you want to select ROI? (y/n) ")
 if ans == "y":
-   croppedx, croppedy, croppedw, croppedh = cv.selectROI("select ROI", frame) # allow user to manually exclude background
+   croppedx, croppedy, croppedw, croppedh = cv.selectROI("select ROI", frame, showCrosshair=False) # allow user to manually exclude background
    Fheight = croppedh
    Fwidth = croppedw
 
@@ -30,7 +30,7 @@ while True:
       print("ERROR: frame captured incorrectly, exiting...")
       break
    if ans == "y":
-      frame = frame[croppedx:(croppedx+croppedw+1), croppedy:(croppedy+croppedh+1)]
+      frame = frame[croppedy:(croppedy+croppedh+1), croppedx:(croppedx+croppedw+1)]
 
    # detect objects & draw objects
    mask = objectDetector.apply(frame)
@@ -89,13 +89,13 @@ for [x1,y1,x2,y2] in coordPairs:
    plt.axline((x1,y1),(x2,y2), linewidth=2, color='b')
 
 #graph ball trajectory
-plt.plot(ballx, bally, 'ro')
+plt.plot(ballx, bally, 'go')
 plt.axis((0,Fwidth,0,Fheight))
 
 #plot lowest point of ball traj (the bounce)
 index = bally.index(min(bally))
 bounce = [ballx[index], bally[index]]
-plt.plot(bounce[0], bounce[1], 'go')
+plt.plot(bounce[0], bounce[1], 'ro')
 plt.show()
 
 #conclude by exiting from everything
