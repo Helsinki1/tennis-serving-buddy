@@ -16,6 +16,7 @@ ballx = []
 bally = []
 coordPairs = np.array([[]], ndmin=2)
 
+buff = input("ready to capture first frame? ")
 success, frame = camera.read()
 Fheight, Fwidth = frame.shape[0:2]
 
