@@ -14,15 +14,15 @@ ballx = []
 bally = []
 coordPairs = np.array([[]], ndmin=2)
 
-buff = input("ready to capture first frame? ")
+input("ready to capture first frame? ")
 success, frame = camera.read()
 Fheight, Fwidth = frame.shape[0:2]
 
 ans = input("Do you want to select ROI? (y/n) ")
 if ans == "y":
    croppedx, croppedy, croppedw, croppedh = cv.selectROI("select ROI", frame, showCrosshair=False) # allow user to manually exclude background
-   Fheight = croppedh
-   Fwidth = croppedw
+   Fheight = int(croppedh)
+   Fwidth = int(croppedw)
 
 while True:
 
@@ -31,7 +31,7 @@ while True:
       print("ERROR: frame captured incorrectly, exiting...")
       break
    if ans == "y":
-      frame = frame[croppedy:(croppedy+croppedh+1), croppedx:(croppedx+croppedw+1)]
+      frame = frame[int(croppedy):int(croppedy+croppedh), int(croppedx):int(croppedx+croppedw)]
 
    # detect objects & draw objects
    mask = objectDetector.apply(frame)

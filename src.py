@@ -16,87 +16,99 @@ ballx = []
 bally = []
 coordPairs = np.array([[]], ndmin=2)
 
-buff = input("ready to capture first frame? ")
+input("ready to capture first frame? ")
 success, frame = camera.read()
 Fheight, Fwidth = frame.shape[0:2]
 
 ans = input("Do you want to select ROI? (y/n) ")
 if ans == "y":
    croppedx, croppedy, croppedw, croppedh = cv.selectROI("select ROI", frame, showCrosshair=False) # allow user to manually exclude background
-   Fheight = croppedh
-   Fwidth = croppedw
+   cv.destroyWindow("select ROI") # WHY is this even necessary ??
+   Fheight = int(croppedh)
+   Fwidth = int(croppedw)
+
+frameReady = False # trigger var for state machine
+stopThreads = False # kills threads when waitkey == q
 
 
 def updateCamera():
    global frame
-   while True:
-      time.sleep(2)
+   global frameReady
+   global stopThreads
+   print("Thread 1 is running")
+   while not stopThreads:
       captured, img = camera.read()
       if not captured:
          print("ERROR: frame captured incorrectly, exiting...")
-         break
+         return
 
       if ans == "y":
-         frame = img[croppedy:(croppedy+croppedh+1), croppedx:(croppedx+croppedw+1)]
+         frame = img[int(croppedy):int(croppedy+croppedh), int(croppedx):int(croppedx+croppedw)]
       else:
          frame = img
-
-      if cv.waitKey(1) == ord('q'):
-         break
+      frameReady = True
+      time.sleep(0.01)
+      print("new camera frame updated")
 
 
 def processFrame():
    global frame
-   while True:
-      time.sleep(2)
-      # detect objects & draw objects
-      mask = objectDetector.apply(frame)
-      _, mask = cv.threshold(mask,254,255,cv.THRESH_BINARY)
-      contours, _ = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+   global frameReady
+   global stopThreads
+   print("Thread 2 is running")
+   while not stopThreads:
+      if frameReady:
+         print("plotting edges & lines...")
+         # detect objects & draw objects
+         mask = objectDetector.apply(frame)
+         _, mask = cv.threshold(mask,254,255,cv.THRESH_BINARY)
+         contours, _ = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
 
-      blankFrame = np.copy(frame) * 0
-      for cnt in contours:
-         # remove static & small elements
-         # draw boxes around all the detected objects & record ball coords
-         area = cv.contourArea(cnt)
-         if area > 35:
-            x, y, w, h = cv.boundingRect(cnt)
-            cv.rectangle(blankFrame, (x, y), (x+w, y+h), (0, 0, 200), 3) # SUPPRESS IN FINAL PRODUCT
-            ballx.append( Fwidth - (x + (w//2)) )
-            bally.append( Fheight - (y + h) )
+         blankFrame = np.copy(frame) * 0
+         for cnt in contours:
+            # remove static & small elements
+            # draw boxes around all the detected objects & record ball coords
+            area = cv.contourArea(cnt)
+            if area > 35:
+               x, y, w, h = cv.boundingRect(cnt)
+               cv.rectangle(blankFrame, (x, y), (x+w, y+h), (0, 0, 200), 3) # SUPPRESS IN FINAL PRODUCT
+               ballx.append( Fwidth - (x + (w//2)) )
+               bally.append( Fheight - (y + h) )
 
-      # detect lines
-      grayFrame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+         # detect lines
+         grayFrame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
 
-      t_lower = 50
-      t_upper = 150
-      L2Grad = True
-      edgesFrame = cv.Canny(grayFrame, t_lower, t_upper, L2gradient = L2Grad)
+         t_lower = 50
+         t_upper = 150
+         L2Grad = True
+         edgesFrame = cv.Canny(grayFrame, t_lower, t_upper, L2gradient = L2Grad)
 
-      rho = 1 # distance resolution
-      theta = np.pi/180 # angular resolution
-      threshold = 15 # min number of votes
-      minLineLength = 50 # min pixels to be a line
-      maxLineGap = 30 # max pixels between parts of a line
-      lines = cv.HoughLinesP(edgesFrame, rho, theta, threshold, np.array([]), minLineLength, maxLineGap)
+         rho = 1 # distance resolution
+         theta = np.pi/180 # angular resolution
+         threshold = 15 # min number of votes
+         minLineLength = 50 # min pixels to be a line
+         maxLineGap = 30 # max pixels between parts of a line
+         lines = cv.HoughLinesP(edgesFrame, rho, theta, threshold, np.array([]), minLineLength, maxLineGap)
 
-      # draw lines
-      for line in lines:
-         for x1,y1,x2,y2 in line:
-            cv.line(blankFrame, (x1,y1),(x2,y2),(255,0,0),5) # SUPPRESS IN FINAL PRODUCT
-
-      cv.imshow('Lines & Objects', blankFrame) # SUPPRESS IN FINAL PRODUCT
-
-      # take a snapshot of the court lines on the last captured frame
-      if cv.waitKey(1) == ord('q'):
-         numLines = len(lines)
-         coordPairs = [[0,0,0,0] for i in range(numLines)]
-         ind = 0
+         # draw lines
          for line in lines:
             for x1,y1,x2,y2 in line:
-               coordPairs[ind] = [x1,y1,x2,y2]
-               ind += 1
-         break
+               cv.line(blankFrame, (x1,y1),(x2,y2),(255,0,0),5) # SUPPRESS IN FINAL PRODUCT
+
+         cv.imshow('Lines & Objects', blankFrame) # SUPPRESS IN FINAL PRODUCT
+         frameReady = False
+
+      time.sleep(0.01)
+
+
+   # take a snapshot of the court lines on the last captured frame
+   numLines = len(lines)
+   coordPairs = [[0,0,0,0] for i in range(numLines)]
+   ind = 0
+   for line in lines:
+      for x1,y1,x2,y2 in line:
+         coordPairs[ind] = [x1,y1,x2,y2]
+         ind += 1
 
 
 if __name__ == "__main__":
@@ -105,6 +117,11 @@ if __name__ == "__main__":
 
    t1.start()
    t2.start()
+
+   #while True:
+   #   if cv.waitKey(1) == ord('q'):
+   #      stopThreads = True
+   #      break
 
    t1.join()
    t2.join()
