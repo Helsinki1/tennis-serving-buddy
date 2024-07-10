@@ -1,13 +1,12 @@
-import threading
+import FpsTracking  # class: FpsTracker
+import CameraStream # class: CameraStream
 import cv2 as cv
 import numpy as np
 from matplotlib import pyplot as plt
-import time
 
-camera = cv.VideoCapture(0)
-if not camera.isOpened():
-   print("ERROR: camera couldnt be opened")
-   exit()
+
+fps = FpsTracking.FpsTracking()
+stream = CameraStream.CameraStream()
 
 objectDetector = cv.createBackgroundSubtractorMOG2(history=100, varThreshold=30)
 
@@ -17,129 +16,99 @@ bally = []
 coordPairs = np.array([[]], ndmin=2)
 
 input("ready to capture first frame? ")
-success, frame = camera.read()
+success, frame = stream.camera.read()
 Fheight, Fwidth = frame.shape[0:2]
 
 ans = input("Do you want to select ROI? (y/n) ")
 if ans == "y":
    croppedx, croppedy, croppedw, croppedh = cv.selectROI("select ROI", frame, showCrosshair=False) # allow user to manually exclude background
-   cv.destroyWindow("select ROI") # WHY is this even necessary ??
-   Fheight = int(croppedh)
-   Fwidth = int(croppedw)
-
-frameReady = False # trigger var for state machine
-stopThreads = False # kills threads when waitkey == q
+   cv.destroyWindow("select ROI")
+   Fheight = croppedh
+   Fwidth = croppedw
+   stream.setROI(croppedx, croppedy, croppedw, croppedh)
 
 
-def updateCamera():
-   global frame
-   global frameReady
-   global stopThreads
-   print("Thread 1 is running")
-   while not stopThreads:
-      captured, img = camera.read()
-      if not captured:
-         print("ERROR: frame captured incorrectly, exiting...")
-         return
-
-      if ans == "y":
-         frame = img[int(croppedy):int(croppedy+croppedh), int(croppedx):int(croppedx+croppedw)]
-      else:
-         frame = img
-      frameReady = True
-      time.sleep(0.01)
-      print("new camera frame updated")
+stream.start()
+fps.start()
 
 
-def processFrame():
-   global frame
-   global frameReady
-   global stopThreads
-   print("Thread 2 is running")
-   while not stopThreads:
-      if frameReady:
-         print("plotting edges & lines...")
-         # detect objects & draw objects
-         mask = objectDetector.apply(frame)
-         _, mask = cv.threshold(mask,254,255,cv.THRESH_BINARY)
-         contours, _ = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+while True:
+   if stream.frameReady:
+      frame = stream.returnFrame()
 
-         blankFrame = np.copy(frame) * 0
-         for cnt in contours:
-            # remove static & small elements
-            # draw boxes around all the detected objects & record ball coords
-            area = cv.contourArea(cnt)
-            if area > 35:
-               x, y, w, h = cv.boundingRect(cnt)
-               cv.rectangle(blankFrame, (x, y), (x+w, y+h), (0, 0, 200), 3) # SUPPRESS IN FINAL PRODUCT
-               ballx.append( Fwidth - (x + (w//2)) )
-               bally.append( Fheight - (y + h) )
+      # detect objects & draw objects
+      mask = objectDetector.apply(frame)
+      _, mask = cv.threshold(mask,254,255,cv.THRESH_BINARY)
+      contours, _ = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
 
-         # detect lines
-         grayFrame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+      blankFrame = np.copy(frame) * 0
+      for cnt in contours:
+         # remove static & small elements
+         # draw boxes around all the detected objects & record ball coords
+         area = cv.contourArea(cnt)
+         if area > 35:
+            x, y, w, h = cv.boundingRect(cnt)
+            cv.rectangle(blankFrame, (x, y), (x+w, y+h), (0, 0, 200), 3) # SUPPRESS IN FINAL PRODUCT
+            ballx.append( Fwidth - (x + (w//2)) )
+            bally.append( Fheight - (y + h) )
 
-         t_lower = 50
-         t_upper = 150
-         L2Grad = True
-         edgesFrame = cv.Canny(grayFrame, t_lower, t_upper, L2gradient = L2Grad)
+      # detect lines
+      grayFrame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
 
-         rho = 1 # distance resolution
-         theta = np.pi/180 # angular resolution
-         threshold = 15 # min number of votes
-         minLineLength = 50 # min pixels to be a line
-         maxLineGap = 30 # max pixels between parts of a line
-         lines = cv.HoughLinesP(edgesFrame, rho, theta, threshold, np.array([]), minLineLength, maxLineGap)
+      t_lower = 50
+      t_upper = 150
+      L2Grad = True
+      edgesFrame = cv.Canny(grayFrame, t_lower, t_upper, L2gradient = L2Grad)
 
-         # draw lines
-         for line in lines:
-            for x1,y1,x2,y2 in line:
-               cv.line(blankFrame, (x1,y1),(x2,y2),(255,0,0),5) # SUPPRESS IN FINAL PRODUCT
+      rho = 1 # distance resolution
+      theta = np.pi/180 # angular resolution
+      threshold = 15 # min number of votes
+      minLineLength = 50 # min pixels to be a line
+      maxLineGap = 30 # max pixels between parts of a line
+      lines = cv.HoughLinesP(edgesFrame, rho, theta, threshold, np.array([]), minLineLength, maxLineGap)
 
-         cv.imshow('Lines & Objects', blankFrame) # SUPPRESS IN FINAL PRODUCT
-         frameReady = False
+      # draw lines
+      for line in lines:
+         for x1,y1,x2,y2 in line:
+            cv.line(blankFrame, (x1,y1),(x2,y2),(255,0,0),5) # SUPPRESS IN FINAL PRODUCT
 
-      time.sleep(0.01)
+      cv.imshow('Lines & Objects', blankFrame) # SUPPRESS IN FINAL PRODUCT
+      fps.updateCount()
+      stream.frameReady = False
 
-
-   # take a snapshot of the court lines on the last captured frame
-   numLines = len(lines)
-   coordPairs = [[0,0,0,0] for i in range(numLines)]
-   ind = 0
-   for line in lines:
-      for x1,y1,x2,y2 in line:
-         coordPairs[ind] = [x1,y1,x2,y2]
-         ind += 1
+   if cv.waitKey(1) == ord('q'):
+      stream.stop()
+      fps.stop()
+      break
 
 
-if __name__ == "__main__":
-   t1 = threading.Thread(target=updateCamera, args=())
-   t2 = threading.Thread(target=processFrame, args=())
+# take a snapshot of the court lines on the last captured frame
+numLines = len(lines)
+coordPairs = [[0,0,0,0] for i in range(numLines)]
+ind = 0
+for line in lines:
+   for x1,y1,x2,y2 in line:
+      coordPairs[ind] = [x1,y1,x2,y2]
+      ind += 1
 
-   t1.start()
-   t2.start()
+   
 
-   #while True:
-   #   if cv.waitKey(1) == ord('q'):
-   #      stopThreads = True
-   #      break
+#graph edges of serve box
+for [x1,y1,x2,y2] in coordPairs:
+   plt.axline((x1,y1),(x2,y2), linewidth=2, color='b')
 
-   t1.join()
-   t2.join()
+#graph ball trajectory
+plt.plot(ballx, bally, 'ro')
+plt.axis((0,Fwidth,0,Fheight))
 
-   #graph edges of serve box
-   for [x1,y1,x2,y2] in coordPairs:
-      plt.axline((x1,y1),(x2,y2), linewidth=2, color='b')
+#plot lowest point of ball traj (the bounce)
+index = bally.index(min(bally))
+bounce = [ballx[index], bally[index]]
+plt.plot(bounce[0], bounce[1], 'go')
+plt.show()
 
-   #graph ball trajectory
-   plt.plot(ballx, bally, 'ro')
-   plt.axis((0,Fwidth,0,Fheight))
+#conclude by exiting from everything
+stream.camera.release
+cv.destroyAllWindows()
 
-   #plot lowest point of ball traj (the bounce)
-   index = bally.index(min(bally))
-   bounce = [ballx[index], bally[index]]
-   plt.plot(bounce[0], bounce[1], 'go')
-   plt.show()
-
-   #conclude by exiting from everything
-   camera.release
-   cv.destroyAllWindows()
+print("FPS:", fps.compute())
