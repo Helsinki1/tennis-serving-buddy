@@ -10,7 +10,7 @@ class CameraStream:
             exit()
         self.stopThreads = False
         self.useROI = False
-        self.frameReady = False
+        self.frameReady = False # used to create a state machine in src
         self.cropped = None
 
 

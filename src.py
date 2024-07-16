@@ -60,6 +60,11 @@ while True:
       L2Grad = True
       edgesFrame = cv.Canny(grayFrame, t_lower, t_upper, L2gradient = L2Grad)
 
+      kernel = np.ones((3,3), np.uint8) # creates 3x3 array full of 1's in uint8
+      edgesFrame = cv.dilate(edgesFrame, kernel, iterations=1)
+      kernel = np.ones((5,5), np.uint8)
+      edgesFrame = cv.erode(edgesFrame, kernel, iterations=1)
+
       rho = 1 # distance resolution
       theta = np.pi/180 # angular resolution
       threshold = 15 # min number of votes
@@ -80,6 +85,7 @@ while True:
       stream.stop()
       fps.stop()
       break
+
 
 
 # take a snapshot of the court lines on the last captured frame
@@ -111,4 +117,4 @@ plt.show()
 stream.camera.release
 cv.destroyAllWindows()
 
-print("FPS:", fps.compute())
+print("FPS:", int(fps.compute()))
