@@ -3,6 +3,7 @@ import CameraStream # class: CameraStream
 import cv2 as cv
 import numpy as np
 from matplotlib import pyplot as plt
+from matplotlib import patches
 
 
 fps = FpsTracking.FpsTracking()
@@ -61,9 +62,9 @@ while True:
       edgesFrame = cv.Canny(grayFrame, t_lower, t_upper, L2gradient = L2Grad)
 
       kernel = np.ones((3,3), np.uint8) # creates 3x3 array full of 1's in uint8
-      edgesFrame = cv.dilate(edgesFrame, kernel, iterations=1)
+      edgesFrame = cv.dilate(edgesFrame, kernel, iterations=1) # merge both borders of a line into one edge
       kernel = np.ones((5,5), np.uint8)
-      edgesFrame = cv.erode(edgesFrame, kernel, iterations=1)
+      edgesFrame = cv.erode(edgesFrame, kernel, iterations=1) # thin each merged edge so houghlines doesnt mark down too many lines
 
       rho = 1 # distance resolution
       theta = np.pi/180 # angular resolution
@@ -97,11 +98,14 @@ for line in lines:
       coordPairs[ind] = [x1,y1,x2,y2]
       ind += 1
 
-   
+
+
+fig, ax = plt.subplots()
+ax.set_facecolor("yellowgreen")
 
 #graph edges of serve box
 for [x1,y1,x2,y2] in coordPairs:
-   plt.axline((x1,y1),(x2,y2), linewidth=2, color='b')
+   plt.axline((x1,y1),(x2,y2), linewidth=2, color="w")
 
 #graph ball trajectory
 plt.plot(ballx, bally, 'ro')
@@ -111,10 +115,15 @@ plt.axis((0,Fwidth,0,Fheight))
 index = bally.index(min(bally))
 bounce = [ballx[index], bally[index]]
 plt.plot(bounce[0], bounce[1], 'go')
+
+#draw the tennis court using patches
+   #serveVertices = np.array((1,1),(1,2),(2,1),(2,2)) # PLACEHOLDER CONSTANTSS
+   #shape = patches.Polygon(serveVertices, color="cornflowerblue")
+   # ax.add_patch(shape)
 plt.show()
 
 #conclude by exiting from everything
 stream.camera.release
 cv.destroyAllWindows()
 
-print("FPS:", int(fps.compute()))
+print("Avg FPS:", int(fps.compute()))
