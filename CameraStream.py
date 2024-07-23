@@ -33,7 +33,7 @@ class CameraStream:
                 print("ERROR: frame captured incorrectly, exiting...")
                 return
             if self.useROI:
-                self.cropped = self.frame[(self.x):(self.x+self.w), (self.y):(self.y+self.h)]
+                self.cropped = self.frame[(self.y):(self.y+self.h), (self.x):(self.x+self.w)]
             self.frameReady = True
         
 

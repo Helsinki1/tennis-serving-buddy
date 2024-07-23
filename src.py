@@ -89,6 +89,10 @@ while True:
 
 
 
+fig, ax = plt.subplots()
+ax.set_facecolor("yellowgreen")
+
+
 # take a snapshot of the court lines on the last captured frame
 numLines = len(lines)
 coordPairs = [[0,0,0,0] for i in range(numLines)]
@@ -98,26 +102,33 @@ for line in lines:
       coordPairs[ind] = [x1,y1,x2,y2]
       ind += 1
 
+
 # record all possible court vertices (line intersections)
 def intersect(coords1, coords2):   # x1y1x2y2 of two lines
    ax1,ay1,ax2,ay2 = coords1[0],coords1[1],coords1[2],coords1[3]
    bx1,by1,bx2,by2 = coords2[0],coords2[1],coords2[2],coords2[3]
-   am = (ay2-ay1)/(ax2-ax1)
-   bm = (by2-by1)/(bx2-bx1)
+
+   if ax2-ax1 == 0: am = 500
+   else: am = (ay2-ay1)/(ax2-ax1)
+   if bx2-bx1 == 0: bm = 500
+   else: bm = (by2-by1)/(bx2-bx1)
+
    x = (am*ax1 - bm*bx1 + by1 - ay1) / (am - bm)
    y = am*(x - ax1) + ay1
    return [x,y]
    
-vertices = []
+verticesX = []
+verticesY = []
 for i in range(numLines-1):
    for ii in range(i+1, numLines):
       vertex = intersect(coordPairs[i],coordPairs[ii])
       if (vertex[0]>0 and vertex[0]<Fwidth) and (vertex[1]>0 and vertex[1]<Fheight):
-         vertices.append(vertex)
+         verticesX.append(vertex[0])
+         verticesY.append(vertex[1])
+
+plt.plot(verticesX, verticesY, 'bo')
 
 
-fig, ax = plt.subplots()
-ax.set_facecolor("yellowgreen")
 
 #graph edges of serve box
 for [x1,y1,x2,y2] in coordPairs:
@@ -133,9 +144,9 @@ bounce = [ballx[index], bally[index]]
 plt.plot(bounce[0], bounce[1], 'go')
 
 #draw the tennis court using patches
-serveVertices = np.array((1,1),(1,2),(2,1),(2,2)) # PLACEHOLDER CONSTANTSS
-shape = patches.Polygon(serveVertices, color="cornflowerblue")
-ax.add_patch(shape)
+         #serveVertices = np.array((1,1),(1,2),(2,1),(2,2)) # PLACEHOLDER CONSTANTSS
+         #shape = patches.Polygon(serveVertices, color="cornflowerblue")
+         #ax.add_patch(shape)
 plt.show()
 
 #conclude by exiting from everything
