@@ -20,13 +20,14 @@ input("Ready to capture first frame? ")
 success, frame = stream.camera.read()
 Fheight, Fwidth = frame.shape[0:2]
 
-ans = input("Do you want to select ROI? (y/n) ")
-if ans == "y":
-   croppedx, croppedy, croppedw, croppedh = cv.selectROI("select ROI", frame, showCrosshair=False) # allow user to manually exclude background
-   cv.destroyWindow("select ROI")
-   Fheight = croppedh
-   Fwidth = croppedw
-   stream.setROI(croppedx, croppedy, croppedw, croppedh)
+ans = input("Ready to select ROI? ")
+croppedx, croppedy, croppedw, croppedh = cv.selectROI("select ROI", frame, showCrosshair=False) # allow user to manually exclude background
+cv.destroyWindow("select ROI")
+Fheight = croppedh
+Fwidth = croppedw
+stream.setROI(croppedx, croppedy, croppedw, croppedh)
+
+
 
 
 stream.start()
@@ -61,9 +62,9 @@ while True:
       L2Grad = True
       edgesFrame = cv.Canny(grayFrame, t_lower, t_upper, L2gradient = L2Grad)
 
-      kernel = np.ones((3,3), np.uint8) # creates 3x3 array full of 1's in uint8
+      kernel = np.ones((5,5), np.uint8) # creates 3x3 array full of 1's in uint8
       edgesFrame = cv.dilate(edgesFrame, kernel, iterations=1) # merge both borders of a line into one edge
-      kernel = np.ones((5,5), np.uint8)
+      kernel = np.ones((7,7), np.uint8)
       edgesFrame = cv.erode(edgesFrame, kernel, iterations=1) # thin each merged edge so houghlines doesnt mark down too many lines
 
       rho = 1 # distance resolution
@@ -86,6 +87,7 @@ while True:
       stream.stop()
       fps.stop()
       break
+
 
 
 
@@ -113,20 +115,29 @@ def intersect(coords1, coords2):   # x1y1x2y2 of two lines
    if bx2-bx1 == 0: bm = 500
    else: bm = (by2-by1)/(bx2-bx1)
 
-   x = (am*ax1 - bm*bx1 + by1 - ay1) / (am - bm)
+   x = -1
+   if am-bm != 0: x = (am*ax1 - bm*bx1 + by1 - ay1) / (am - bm)
    y = am*(x - ax1) + ay1
    return [x,y]
    
-verticesX = []
-verticesY = []
+verticesX = [] # x coords of vertices
+verticesY = [] # y coords of vertices
+verticesL = [] # coords that fall on the left half of frame
+verticesR = [] # coords that fall on right half of frame
+vertices = [] # xy coords of all vertices
 for i in range(numLines-1):
    for ii in range(i+1, numLines):
       vertex = intersect(coordPairs[i],coordPairs[ii])
       if (vertex[0]>0 and vertex[0]<Fwidth) and (vertex[1]>0 and vertex[1]<Fheight):
          verticesX.append(vertex[0])
          verticesY.append(vertex[1])
+         vertices.append(vertex)
+         if vertex[0] > Fwidth/2:
+            verticesR.append(vertex)
+         else:
+            verticesL.append(vertex)
 
-plt.plot(verticesX, verticesY, 'bo')
+plt.plot(verticesX, verticesY, 'bo') # plot all intersections (for debugging)
 
 
 
