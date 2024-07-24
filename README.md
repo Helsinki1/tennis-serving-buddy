@@ -1,4 +1,4 @@
-The goals of this project is to create a tool that tracks the trajectory, bounce, and speed of a player's serve with reference to the tennis court
+The goal of this project is to create a tool that tracks the trajectory, bounce, and speed of a player's serve with reference to the tennis court
 
 Main Objectives
 1. Detect and draw the lines of the tennis court
