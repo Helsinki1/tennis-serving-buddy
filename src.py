@@ -74,6 +74,8 @@ while True:
       maxLineGap = 30 # max pixels between parts of a line
       lines = cv.HoughLinesP(edgesFrame, rho, theta, threshold, np.array([]), minLineLength, maxLineGap)
 
+      #lines.append([0,0,Fwidth-1,0]) # in case the 4 vertices of baseline cant be captured bc of space permitted
+
       # draw lines
       for line in lines:
          for x1,y1,x2,y2 in line:
