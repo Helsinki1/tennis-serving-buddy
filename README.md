@@ -6,3 +6,5 @@ Main Objectives
 3. Plot the location of each bounce
 4. Calculate the speed of each serve
 5. Design it to be user-friendly and easy to deploy
+
+![alt text](https://github.com/Helsinki1/tennis-serving-buddy/blob/main/pyplotCourt1.png?raw=true)
