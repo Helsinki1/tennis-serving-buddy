@@ -62,10 +62,10 @@ while True:
       L2Grad = True
       edgesFrame = cv.Canny(grayFrame, t_lower, t_upper, L2gradient = L2Grad)
 
-      kernel = np.ones((5,5), np.uint8) # creates 3x3 array full of 1's in uint8
-      edgesFrame = cv.dilate(edgesFrame, kernel, iterations=1) # merge both borders of a line into one edge
+      kernel = np.ones((7,7), np.uint8) # creates 3x3 array full of 1's in uint8
+      edgesFrame = cv.dilate(edgesFrame, kernel, iterations=1) # enlarges white lines to merge both borders of a line into one edge
       kernel = np.ones((7,7), np.uint8)
-      edgesFrame = cv.erode(edgesFrame, kernel, iterations=1) # thin each merged edge so houghlines doesnt mark down too many lines
+      edgesFrame = cv.erode(edgesFrame, kernel, iterations=1) # thins white lines to merge edges so houghlines doesnt mark down too many lines
 
       rho = 1 # distance resolution
       theta = np.pi/180 # angular resolution
@@ -104,46 +104,46 @@ for line in lines:
       coordPairs[ind] = [x1,y1,x2,y2]
       ind += 1
 
-
-# record all possible court vertices (line intersections)
-def intersect(coords1, coords2):   # x1y1x2y2 of two lines
-   ax1,ay1,ax2,ay2 = coords1[0],coords1[1],coords1[2],coords1[3]
-   bx1,by1,bx2,by2 = coords2[0],coords2[1],coords2[2],coords2[3]
-
-   if ax2-ax1 == 0: am = 500
-   else: am = (ay2-ay1)/(ax2-ax1)
-   if bx2-bx1 == 0: bm = 500
-   else: bm = (by2-by1)/(bx2-bx1)
-
-   x = -1
-   if am-bm != 0: x = (am*ax1 - bm*bx1 + by1 - ay1) / (am - bm)
-   y = am*(x - ax1) + ay1
-   return [x,y]
-   
-verticesX = [] # x coords of vertices
-verticesY = [] # y coords of vertices
-verticesL = [] # coords that fall on the left half of frame
-verticesR = [] # coords that fall on right half of frame
-vertices = [] # xy coords of all vertices
-for i in range(numLines-1):
-   for ii in range(i+1, numLines):
-      vertex = intersect(coordPairs[i],coordPairs[ii])
-      if (vertex[0]>0 and vertex[0]<Fwidth) and (vertex[1]>0 and vertex[1]<Fheight):
-         verticesX.append(vertex[0])
-         verticesY.append(vertex[1])
-         vertices.append(vertex)
-         if vertex[0] > Fwidth/2:
-            verticesR.append(vertex)
-         else:
-            verticesL.append(vertex)
-
-plt.plot(verticesX, verticesY, 'bo') # plot all intersections (for debugging)
-
-
-
-#graph edges of serve box
+#graph all detected court lines
 for [x1,y1,x2,y2] in coordPairs:
-   plt.axline((x1,y1),(x2,y2), linewidth=2, color="w")
+   ax.plot([x1,x2],[y1,y2], color='white', linestyle='solid', linewidth=2)
+   plt.plot(x1,y1, color='m')
+   plt.plot(x2,y2, color='m')
+   #plt.axline((x1,y1),(x2,y2), linewidth=2, color='w')
+   #plt.plot([x1,x2],[y1,y2], 'w', linestyle="solid")
+
+
+
+# record all the corners created by court lines
+grayFrame = np.float32(grayFrame)
+dst = cv.cornerHarris(grayFrame, 2, 3, 0.04)  # find harris corners
+
+kernel = np.ones((7,7), np.uint8)
+dst = cv.dilate(dst, kernel)  # enlargen lighter areas and remove noise
+#dst = cv.erode(dst, kernel)
+
+_, dst = cv.threshold(dst,0.01*dst.max(),255,0)  # turn dst black and white
+dst = np.uint8(dst)
+ret, labels, stats, centroids = cv.connectedComponentsWithStats(dst)
+criteria = (cv.TERM_CRITERIA_EPS + cv.TermCriteria_MAX_ITER, 100, 0.001)
+corners = cv.cornerSubPix(grayFrame, np.float32(centroids), (5,5), (-1,-1), criteria)  # refines corner coords to find subpixel location
+cv.imshow("grayscale + dilate + threshold for corners", dst)
+
+# plot all detected corners
+corners = np.intp(corners)
+print(corners)
+cornersX = []
+cornersY = []
+for [x,y] in corners[1:]:
+   cornersX.append(x)
+   cornersY.append(y)
+   plt.plot(x, y, 'mo')
+
+
+#draw the tennis court using patches
+         #serveVertices = np.array((1,1),(1,2),(2,1),(2,2)) # PLACEHOLDER CONSTANTS
+         #shape = patches.Polygon(serveVertices, color="cornflowerblue")
+         #ax.add_patch(shape)
 
 #graph ball trajectory
 plt.plot(ballx, bally, 'ro')
@@ -153,11 +153,6 @@ plt.axis((0,Fwidth,0,Fheight))
 index = bally.index(min(bally))
 bounce = [ballx[index], bally[index]]
 plt.plot(bounce[0], bounce[1], 'go')
-
-#draw the tennis court using patches
-         #serveVertices = np.array((1,1),(1,2),(2,1),(2,2)) # PLACEHOLDER CONSTANTSS
-         #shape = patches.Polygon(serveVertices, color="cornflowerblue")
-         #ax.add_patch(shape)
 plt.show()
 
 #conclude by exiting from everything
