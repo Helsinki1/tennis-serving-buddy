@@ -93,6 +93,7 @@ while True:
 
 
 
+
 fig, ax = plt.subplots()
 ax.set_facecolor("yellowgreen")
 
@@ -166,10 +167,16 @@ for [x1,y1,x2,y2] in coordPairs:
 plt.plot(ballx, bally, 'ro')
 plt.axis((0,Fwidth,0,Fheight))
 
-#plot lowest point of ball traj (the bounce)
-index = bally.index(min(bally))
-bounce = [ballx[index], bally[index]]
+#plot the bounce of the ball by tracking rate of change
+refSlope = (bally[1]-bally[0]) / (ballx[1]-ballx[0])
+for i in range(2, len(ballx)):
+   slope = (bally[i]-bally[i-1]) / (ballx[i]-ballx[i-1])
+   if (refSlope<0 and slope>0) or (refSlope>0 and slope<0):  # NEEDS TO BE RIGOROUSLY TESTED
+      bounce = [ballx[i-1], bally[i-1]]
+      i = len(ballx)
+
 plt.plot(bounce[0], bounce[1], 'go')
+plt.ylim(max(plt.ylim()), min(plt.ylim())) # shift origin to top left corner
 plt.show()
 
 #conclude by exiting from everything
